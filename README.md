@@ -10,7 +10,7 @@ Exmaple of `yaml_file`:
 # scripts/infer.yaml
 path:
     dataset: testset
-    model_path: params
+    model_path: models
     save_path: result
 
 setup:
