@@ -1,4 +1,5 @@
 # RI2FL
+This repository contains Pytorch implementation of RI2FL.
 
 ## Usage
 ### YAML Script
