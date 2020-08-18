@@ -40,5 +40,5 @@ ri2fl.predict_all()
 
 Then, write a command to implement it.
 ```bash
->>> python example.py infer
+➜ python example.py infer
 ```
