@@ -1,0 +1,15 @@
+path:
+    dataset: testset
+    model_path: jit_models
+    save_path: result
+
+setup:
+    fl_list: mem, nuc, oli
+    batch_size: 16
+    gpus: 0,1,2,3
+    cpus: 16
+    zoomed_size: [512, 512]
+    patch_size: 256
+    cropped_depth: 64
+    num_drop: 0
+    num_tta: 4

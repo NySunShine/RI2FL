@@ -1,0 +1,10 @@
+  
+.vscode
+.ipy*
+*.pyc
+__pycache__
+*/__pycache__
+*.ini
+result
+*.ipynb
+*.hdf
