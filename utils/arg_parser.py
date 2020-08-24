@@ -2,6 +2,8 @@ import os
 import yaml
 
 import torch
+import torch.distributed as dist
+from apex.parallel import DistributedDataParallel
 
 
 torch.backends.cudnn.benchmark = True
@@ -16,13 +18,18 @@ class Argments(object):
 
     def _model_load(self):
         fl_type = self['setup/fl_type']
-        model = torch.nn.DataParallel(torch.jit.load(f"{self['path/model_path']}/{fl_type}.pth")).cuda()
+        # model = torch.nn.DataParallel(torch.jit.load(f"{self['path/model_path']}/{fl_type}.pth")).cuda()
+        model = DistributedDataParallel(torch.jit.load(f"{self['path/model_path']}/{fl_type}.pth").cuda())
         self['model'] = model
 
-    def __init__(self, yaml_file):
+    def __init__(self, yaml_file, cmd_args):
         self.file_name = yaml_file
         self._y = self._file_load(yaml_file)
         os.environ["CUDA_VISIBLE_DEVICES"] = self["setup/gpus"]
+        self['setup/rank'] = cmd_args.local_rank
+
+        torch.cuda.set_device(cmd_args.local_rank)
+        dist.init_process_group(backend='nccl', init_method='env://')
 
     def reset(self):
         for k, v in list(self.__dict__.items()):

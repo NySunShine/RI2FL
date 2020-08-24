@@ -1,13 +1,15 @@
 path:
-    dataset: testset
     model_path: models
-    save_path: result
+    dataset: testset
+    save_path: res
+    # dataset: /data6/others_origin
+    # save_path: /data6/others_fl
 
 setup:
-    fl_list: mem, nuc, oli
-    batch_size: 16
-    gpus: 0,1,2,3
-    cpus: 16
+    fl_list: mem, nuc
+    batch_size: 4
+    gpus: 0,1,2,3,4,5,6,7
+    cpus: 1
     zoomed_size: [512, 512]
     patch_size: 256
     cropped_depth: 64

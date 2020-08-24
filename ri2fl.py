@@ -1,3 +1,4 @@
+import torch.distributed as dist
 import re
 import argparse
 from loaders.slideloader import SlideInferLoader
@@ -11,8 +12,8 @@ FL_TYPES = ['mem', 'act', 'mito', 'lipid', 'nuc', 'oli']
 
 
 class Ri2Fl(object):
-    def __init__(self, arg_path):
-        self.arg = Argments(f"scripts/{arg_path}")
+    def __init__(self, arg_path, cmd_args):
+        self.arg = Argments(f"scripts/{arg_path}", cmd_args)
         self.dataset_path = self.arg['path/dataset']
         self.save_path = self.arg['path/save_path']
         p = re.compile("\w+")
@@ -33,7 +34,10 @@ class Ri2Fl(object):
         runner = Predictor(self.arg['model'], loader, stitcher, setup['num_drop'],
                            setup['num_tta'], self.save_path, fl_type)
 
-        runner.infer()
+        runner.infer_patch()
+        dist.barrier()
+        runner.stitch()
+        dist.barrier()
 
     def predict_all(self):
         for fl_type in self.fl_list:
@@ -43,6 +47,8 @@ class Ri2Fl(object):
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
     argparser.add_argument("yaml")
+    argparser.add_argument("--local_rank", default=0, type=int)
     cmd_args = argparser.parse_args()
-    ri2fl = Ri2Fl(f"{cmd_args.yaml}.yaml")
+    ri2fl = Ri2Fl(f"{cmd_args.yaml}.yaml", cmd_args)
     ri2fl.predict_all()
+    dist.destroy_process_group()

@@ -61,6 +61,8 @@ class Predictor(object):
         self.save_path.mkdir(parents=True, exist_ok=True)
         self.fl_type = fl_type
         self.patches = defaultdict(dict)
+        self.rank = torch.distributed.get_rank()
+        self.world_size = torch.distributed.get_world_size()
 
     def _tta(self, x, n, t):
         """
@@ -73,6 +75,71 @@ class Predictor(object):
 
         y = transform(t)[1](y_t)
         return y
+
+    @torch.no_grad()
+    def infer_patch(self):
+        for img, coord, name in self.loader.load():
+            img = img.cuda()
+            sum_alea = 0
+            sum_epis = 0
+            mean_alea = 0
+            mean_epis = 0
+
+            if self.num_tta:
+                for n, t in zip(self.ns, self.ts):
+                    y = self._tta(img, n, t)
+                    sum_alea += y
+                mean_alea = sum_alea / self.num_tta
+
+            if self.num_drop:
+                self.model.apply(apply_dropout)
+                for _ in range(self.num_drop):
+                    y = self.model(img)
+                    sum_epis += y
+                mean_epis = sum_epis / self.num_drop
+
+            output = (mean_alea + mean_epis) / 2
+
+            for i in range(output.size(0)):
+                f = name[i]
+                c = coord[i].numpy()
+                o = output[i].cpu().numpy()[0]
+
+                patches = {f'fl_{self.fl_type}': o}
+
+                def save_h5(name, coord, patch):
+                    with h5py.File(name, 'a') as h:
+                        dst = h.create_group(f"{coord[0]}_{coord[1]}")
+                        for k, v in patch.items():
+                            dst.create_dataset(k, data=v)
+                try:
+                    save_h5(f'{self.save_path}/{f}.h5', c, patches)
+                except ValueError:
+                    pass
+
+    def stitch(self):
+        paths = list(Path(self.save_path).glob('*.h5'))[self.rank::self.world_size]
+        for p in paths:
+            print(p.stem)
+            patches = {}
+            with h5py.File(p, 'a') as h:
+                for c, imgs in h.items():
+                    if isinstance(imgs, h5py.Group):
+                        y, x = c.split('_')
+                        c_ = torch.tensor([int(y), int(x)], dtype=torch.int16)
+                        patches[c_] = imgs
+                img = self.stitcher.stitch(patches)
+
+                for k, v in img.items():
+                    try:
+                        data = (v - v.min()) / (v.max() - v.min())
+                        h.create_dataset(k, data=data)
+                    except RuntimeError:
+                        pass
+
+                for k, v in h.items():
+                    if isinstance(v, h5py.Group):
+                        del h[k]
 
     @torch.no_grad()
     def infer(self):
@@ -115,7 +182,7 @@ class Predictor(object):
                 # a = alea_std[i].cpu().numpy()[0]
                 # e = epis_std[i].cpu().numpy()[0]
 
-                imgs = {f'{self.fl_type}_output': o,
+                imgs = {f'fl_{self.fl_type}': o,
                         # f'{self.fl_type}_aleatoric': a,
                         # f'{self.fl_type}_epistemic': e
                         }
@@ -130,7 +197,7 @@ class Predictor(object):
                                 data = (v - v.min()) / (v.max() - v.min())
                                 try:
                                     del h[k]
-                                except TypeError:
+                                except KeyError:
                                     pass
                                 h.create_dataset(k, data=data)
 

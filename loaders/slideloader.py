@@ -1,6 +1,7 @@
 import h5py
 import math
 import torch
+import torch.distributed as dist
 
 import numpy as np
 from pathlib import Path
@@ -94,6 +95,8 @@ class SlideInferLoader(object):
         self.cropped_depth = cropped_depth
         self.batch_size = batch_size
         self.cpus = cpus
+        self.rank = dist.get_rank()
+        self.world_size = dist.get_world_size()
 
     def load(self):
         lists = [self.paths[i::self.cpus] for i in range(self.cpus)]
@@ -101,7 +104,7 @@ class SlideInferLoader(object):
         for l in lists:
             datasets += [(SlideDataset(
                 i, self.zoomed_size, self.patch_size, self.cropped_depth
-            ) for i in l)]
+            ) for idx, i in enumerate(l) if idx % self.world_size == self.rank)]
         dataset = MpChainDataset(datasets)
         loader = data.DataLoader(dataset, self.batch_size, pin_memory=True,
                                  drop_last=False, num_workers=self.cpus)
