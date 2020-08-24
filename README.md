@@ -42,7 +42,7 @@ ri2fl.predict_all()
 dist.destroy_process_group()
 ```
 
-Then, write a command to implement it.
+Then, run the python script with the following command as bellow.
 ```bash
 ➜ python -m torch.distributed.launch --nporoc_per_node=4 example.py infer
 ```
