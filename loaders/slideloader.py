@@ -4,6 +4,7 @@ import torch
 
 import numpy as np
 from pathlib import Path
+from itertools import chain
 from collections import deque
 from scipy.ndimage import zoom
 
@@ -25,7 +26,9 @@ class SlideDataset(data.IterableDataset):
         def norm(_x):
             if np.all([_x >= 0., _x <= 1.]):
                 return _x
-            return (_x - 1.337) / (1.39 - 1.337)
+            if _x.min() > 10000:
+                return (_x.clip(13370, 13900) - 13370) / (13900 - 13370)
+            return (_x.clip(1.337, 1.39) - 1.337) / (1.39 - 1.337)
 
         x = norm(x)
         d, h, w = x.shape
@@ -84,7 +87,8 @@ class MpChainDataset(data.ChainDataset):
 
 class SlideInferLoader(object):
     def __init__(self, paths, zoomed_size, patch_size, cropped_depth, batch_size, cpus):
-        self.paths = list(Path(paths).glob('*.h5'))
+        extensions = ['h5', 'hdf', 'TCF']
+        self.paths = list(chain(*[Path(paths).rglob(f'*.{ext}') for ext in extensions]))
         self.zoomed_size = zoomed_size
         self.patch_size = patch_size
         self.cropped_depth = cropped_depth
