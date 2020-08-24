@@ -16,9 +16,9 @@ path:
 
 setup:
     fl_list: mem, nuc, oli
-    batch_size: 16
+    batch_size: 4
     gpus: 0,1,2,3
-    cpus: 16
+    cpus: 4
     zoomed_size: [512, 512]
     patch_size: 256
     cropped_depth: 64
@@ -30,16 +30,19 @@ setup:
 # example.py
 import argparse
 from ri2fl import Ri2Fl
+import torch.distributed as dist
 
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument("yaml")
+argparser.add_argument("--local_rank", default=0, type=int)
 cmd_args = argparser.parse_args()
-ri2fl = Ri2Fl(f"{cmd_args.yaml}.yaml")
+ri2fl = Ri2Fl(f"{cmd_args.yaml}.yaml", cmd_args)
 ri2fl.predict_all()
+dist.destroy_process_group()
 ```
 
 Then, write a command to implement it.
 ```bash
-➜ python example.py infer
+➜ python -m torch.distributed.launch --nporoc_per_node=4 example.py infer
 ```
