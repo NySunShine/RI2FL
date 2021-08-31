@@ -6,20 +6,24 @@ from collections import defaultdict
 
 
 def transform(num):
-    case = {0: [lambda x: x, lambda x: x],
-            1: [lambda x: x.transpose(3, 4).flip(3), lambda x: x.transpose(3, 4).flip(4)],
-            2: [lambda x: x.flip(3).flip(4), lambda x: x.flip(3).flip(4)],
-            3: [lambda x: x.transpose(3, 4).flip(4), lambda x: x.transpose(3, 4).flip(3)]}
+    case = {
+        0: [lambda x: x, lambda x: x],
+        1: [lambda x: x.transpose(3, 4).flip(3), lambda x: x.transpose(3, 4).flip(4)],
+        2: [lambda x: x.flip(3).flip(4), lambda x: x.flip(3).flip(4)],
+        3: [lambda x: x.transpose(3, 4).flip(4), lambda x: x.transpose(3, 4).flip(3)],
+    }
 
     return case[num]
 
 
 def noise(num):
-    case = {0: lambda x: x,
-            1: lambda x: x ** 1.2,
-            2: lambda x: x ** 0.8,
-            3: lambda x: x + torch.randn_like(x) * 0.015,
-            4: lambda x: (x * 1000).to(torch.int).to(torch.float) / 1000}
+    case = {
+        0: lambda x: x,
+        1: lambda x: x ** 1.2,
+        2: lambda x: x ** 0.8,
+        3: lambda x: x + torch.randn_like(x) * 0.015,
+        4: lambda x: (x * 1000).to(torch.int).to(torch.float) / 1000,
+    }
 
     return case[num]
 
@@ -48,13 +52,18 @@ class Predictor(object):
         >>> runner = Runner(arg['model'], loader, stitcher, setup['num_drop'], setup['num_tta'], save_path, fl_type)
         >>> runner.infer()
     """
-    def __init__(self, model, loader, stitcher, num_drop, num_tta, save_path, fl_type):
+
+    def __init__(
+        self, model, loader, stitcher, save_path, fl_type, num_drop=0, num_tta=0
+    ):
         self.model = model
         self.loader = loader
         self.stitcher = stitcher
         self.num_drop = num_drop
         self.num_tta = num_tta
-        assert num_drop or num_tta, "At least one of [num_drop, num_tta] should be larger than zero."
+        assert (
+            num_drop or num_tta
+        ), "At least one of [num_drop, num_tta] should be larger than zero."
         self.ns = np.random.randint(0, 5, num_tta)
         self.ts = np.random.randint(0, 4, num_tta)
         self.save_path = Path(save_path)
@@ -105,27 +114,28 @@ class Predictor(object):
                 c = coord[i].numpy()
                 o = output[i].cpu().numpy()[0]
 
-                patches = {f'fl_{self.fl_type}': o}
+                patches = {f"fl_{self.fl_type}": o}
 
                 def save_h5(name, coord, patch):
-                    with h5py.File(name, 'a') as h:
+                    with h5py.File(name, "a") as h:
                         dst = h.create_group(f"{coord[0]}_{coord[1]}")
                         for k, v in patch.items():
                             dst.create_dataset(k, data=v)
+
                 try:
-                    save_h5(f'{self.save_path}/{f}.h5', c, patches)
+                    save_h5(f"{self.save_path}/{f}.h5", c, patches)
                 except ValueError:
                     pass
 
     def stitch(self):
-        paths = list(Path(self.save_path).glob('*.h5'))[self.rank::self.world_size]
+        paths = list(Path(self.save_path).glob("*.h5"))[self.rank :: self.world_size]
         for p in paths:
             print(p.stem)
             patches = {}
-            with h5py.File(p, 'a') as h:
+            with h5py.File(p, "a") as h:
                 for c, imgs in h.items():
                     if isinstance(imgs, h5py.Group):
-                        y, x = c.split('_')
+                        y, x = c.split("_")
                         c_ = torch.tensor([int(y), int(x)], dtype=torch.int16)
                         patches[c_] = imgs
                 img = self.stitcher.stitch(patches)
@@ -182,17 +192,19 @@ class Predictor(object):
                 # a = alea_std[i].cpu().numpy()[0]
                 # e = epis_std[i].cpu().numpy()[0]
 
-                imgs = {f'fl_{self.fl_type}': o,
-                        # f'{self.fl_type}_aleatoric': a,
-                        # f'{self.fl_type}_epistemic': e
-                        }
+                imgs = {
+                    f"fl_{self.fl_type}": o,
+                    # f'{self.fl_type}_aleatoric': a,
+                    # f'{self.fl_type}_epistemic': e
+                }
                 self.patches[f][c] = imgs
 
                 if len(self.patches[f]) == self.stitcher.full_index:
+
                     def stitch_and_save(file_name, patches):
                         img = self.stitcher.stitch(patches)
                         print(file_name)
-                        with h5py.File(file_name, 'a') as h:
+                        with h5py.File(file_name, "a") as h:
                             for k, v in img.items():
                                 data = (v - v.min()) / (v.max() - v.min())
                                 try:
