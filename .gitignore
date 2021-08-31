@@ -6,5 +6,5 @@ __pycache__
 */__pycache__
 *.ini
 result
-*.ipynb
+# *.ipynb
 *.hdf
