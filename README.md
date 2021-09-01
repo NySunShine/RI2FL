@@ -1,6 +1,8 @@
 # RI2FL
 This repository contains PyTorch implementation of [RI2FL](https://www.biorxiv.org/content/10.1101/2020.09.16.300392v1).
 
+![image](figures/architecture.png)
+
 ## System requirements and installation guide
 Installation should be fairly quick (typically less than an hour). On a computer with CUDA-compatible GPUs and Linux operating system (e.g., Ubuntu 16.04), install CUDA/cuDNN and Python 3 (tested on 3.8) with the following packages:
 ```yaml
@@ -11,6 +13,7 @@ scikit-learn
 scikit-image
 h5py
 tqdm
+PyYAML
 ```
 
 ## Demo and instructions for use
@@ -56,6 +59,11 @@ dist.destroy_process_group()
 
 Then, run the python script with the following command as bellow.
 ```bash
-➜ python -m torch.distributed.launch --nporoc_per_node=4 example.py infer
+➜ python -m torch.distributed.launch --nproc_per_node=4 example.py infer
 ```
+
 The demo data in the testset folder will output FL tomograms inferred from the input RI tomograms. In order to run RI2FL with your own data, organize your RI tomogram in this format and repeat the procedures above. Simple statistical analyses of the input/output tomograms could reproduce the results in the manuscript. Run time depends on data size and hardware; for a full-sized tomogram, it is expected to take less than a minute with a NVIDIA V100 GPU. 
+
+## Timelapse Example
+
+![image](figures/git_main.png)
