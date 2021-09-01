@@ -4,16 +4,9 @@ This repository contains PyTorch implementation of [RI2FL](https://www.biorxiv.o
 ![image](figures/architecture.png)
 
 ## System requirements and installation guide
-Installation should be fairly quick (typically less than an hour). On a computer with CUDA-compatible GPUs and Linux operating system (e.g., Ubuntu 16.04), install CUDA/cuDNN and Python 3 (tested on 3.8) with the following packages:
-```yaml
-pytorch >= 1.0
-numpy
-scipy
-scikit-learn
-scikit-image
-h5py
-tqdm
-PyYAML
+Installation should be fairly quick (typically less than an hour). On a computer with CUDA-compatible GPUs and Linux operating system (e.g., Ubuntu 16.04), install CUDA/cuDNN and Python 3 (tested on 3.8) with the following command:
+```bash
+➜ pip install -r requirements.txt
 ```
 
 ## Demo and instructions for use
