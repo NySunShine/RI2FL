@@ -60,3 +60,12 @@ The demo data in the testset folder will output FL tomograms inferred from the i
 ## Timelapse Example
 
 ![image](figures/git_main.png)
+
+## Training Data Samples
+
+The samples for training a model is now available ([Link](https://drive.google.com/file/d/15RBZJ3foAlQoEwi81-FI_pC8QxZKd6lq/view?usp=sharing)).
+
+You can build your own model and train it using samples.
+```bash
+➜ python -m torch.distributed.launch --nproc_per_node=4 train.py --data_root trainset --fl_type nuc --save_path outs/nuc
+```
