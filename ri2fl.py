@@ -32,9 +32,6 @@ class Ri2Fl(object):
         setup = self.arg["setup"]
         loader = SlideInferLoader(
             self.dataset_path,
-            setup["zoomed_size"],
-            setup["patch_size"],
-            setup["cropped_depth"],
             setup["batch_size"],
             setup["cpus"],
         )
@@ -48,10 +45,10 @@ class Ri2Fl(object):
             self.arg["model"],
             loader,
             stitcher,
-            setup["num_drop"],
-            setup["num_tta"],
             self.save_path,
             fl_type,
+            setup["num_drop"],
+            setup["num_tta"],
         )
 
         runner.infer_patch()
